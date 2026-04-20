@@ -1,38 +1,50 @@
 #!/usr/bin/env bash
 
-export NPM_CONFIG_PREFIX=${HOME}/.npm-packages
+gemini_version=0.38.2
+mkdir -p $HOME/.gemini-sandbox
+mkdir -p $HOME/.gemini
+
+command=( docker run -it --rm \
+                      --entrypoint '' \
+                      --user $(id -u):$(id -g) \
+                      -e HOME=/home/node \
+                      -e PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/node/.gemini-sandbox/bin \
+                      -v "$PWD":/home/node/`basename "$PWD"` \
+                      --workdir /home/node/`basename "$PWD"` \
+                      -e NPM_CONFIG_PREFIX=/home/node/.gemini-sandbox \
+                      -v $HOME/.gemini-sandbox:/home/node/.gemini-sandbox \
+                      -v $HOME/.gemini:/home/node/.gemini \
+                      -e GOOGLE_CLOUD_PROJECT \
+                      -e TERM=$TERM -e COLORTERM=$COLORTERM \
+)
+
+run_in_docker() {
+  "${command[@]}" --net host ghcr.io/t7tran/nodedev:lts "$@"
+}
 
 ensure_extension() {
   local ext=$1 path=$2
-  if [ ! -d ~/.gemini/extensions/$ext ]; then gemini extensions install $path --consent --auto-update; fi
+  if [ ! -d $HOME/.gemini/extensions/$ext ]; then run_in_docker gemini extensions install $path --consent --auto-update; fi
 }
 
 args=(); for arg in "$@"; do [[ "$arg" != "--no-update" ]] && args+=("$arg"); done
 
 if [[ "$@" != *--no-update* ]]; then
-  npm install --loglevel=silent -g @google/gemini-cli@latest
+  version=`run_in_docker gemini --version 2>/dev/null`
+  if [[ "$(printf '%s\n' "$gemini_version" "${version:-0.0.1}" | sort -rV | tail -n1)" != "$gemini_version" ]]; then
+    run_in_docker npm install --loglevel=error -g @google/gemini-cli@latest
+  fi
   ensure_extension conductor https://github.com/gemini-cli-extensions/conductor
   ensure_extension Stitch    https://github.com/gemini-cli-extensions/stitch
-  gemini extensions update --all
+  run_in_docker gemini extensions update --all
   docker pull ghcr.io/t7tran/nodedev:lts
 fi
-
-command=( docker run -it --rm \
-                      --user $(id -u):$(id -g) \
-                      -e HOME=/home/node \
-                      -v "$PWD":/home/node/`basename "$PWD"` \
-                      --workdir /home/node/`basename "$PWD"` \
-                      -e NPM_CONFIG_PREFIX=/home/node/.npm-packages \
-                      -v ${HOME}/.npm-packages:/home/node/.npm-packages \
-                      -e GOOGLE_CLOUD_PROJECT \
-                      -e TERM=$TERM -e COLORTERM=$COLORTERM \
-)
 
 if [[ -f $HOME/.gitconfig ]]; then
 	command+=( -v $HOME/.gitconfig:/home/node/.gitconfig:ro )
 fi
-if [[ -d $HOME/.gemini ]]; then
-	command+=( -v $HOME/.gemini:/home/node/.gemini )
+if [[ -f $HOME/.config/gcloud ]]; then
+	command+=( -v $HOME/.config/gcloud:/home/node/.config/gcloud:ro )
 fi
 if [[ -d $HOME/git ]]; then
 	command+=( -v $HOME/git:/home/node/git:ro )
