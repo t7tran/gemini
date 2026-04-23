@@ -34,8 +34,9 @@ if [[ "$@" != *--no-update* ]]; then
   if [[ "$(printf '%s\n' "$gemini_version" "${version:-0.0.1}" | sort -rV | tail -n1)" != "$gemini_version" ]]; then
     run_in_docker npm install --loglevel=error -g @google/gemini-cli@latest
   fi
-  ensure_extension conductor https://github.com/gemini-cli-extensions/conductor
-  ensure_extension Stitch    https://github.com/gemini-cli-extensions/stitch
+  ensure_extension atlassian-rovo-mcp-server https://github.com/atlassian/atlassian-mcp-server
+  ensure_extension conductor                 https://github.com/gemini-cli-extensions/conductor
+  ensure_extension Stitch                    https://github.com/gemini-cli-extensions/stitch
   run_in_docker gemini extensions update --all
   docker pull ghcr.io/t7tran/nodedev:lts
 fi
