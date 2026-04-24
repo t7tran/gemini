@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-gemini_version=0.38.2
+gemini_version=0.39.1
 mkdir -p $HOME/.gemini-sandbox
 mkdir -p $HOME/.gemini
 
