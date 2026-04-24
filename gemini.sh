@@ -50,6 +50,12 @@ fi
 if [[ -d $HOME/git ]]; then
 	command+=( -v $HOME/git:/home/node/git:ro )
 fi
+if [[ -d $HOME/.sf ]]; then
+	command+=( -v $HOME/.sf:/home/node/.sf )
+fi
+if [[ -d $HOME/.sfdx ]]; then
+	command+=( -v $HOME/.sfdx:/home/node/.sfdx )
+fi
 
 command+=( ghcr.io/t7tran/nodedev:lts gemini )
 
